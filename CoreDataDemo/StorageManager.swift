@@ -5,7 +5,6 @@
 //  Created by Евгений Волошенко on 01.05.2022.
 //
 
-import Foundation
 import CoreData
 import UIKit
 
@@ -28,7 +27,7 @@ class StorageManager {
         fetchData()
     }
     
-    func delete(taskIndex: Int) {
+    func delete(_ taskIndex: Int) {
         
         let fetchRequest = Task.fetchRequest()
         
@@ -41,6 +40,25 @@ class StorageManager {
             }
         } catch let error {
             print("Failed to delete data", error)
+        }
+    
+        saveContext()
+        fetchData()
+    }
+    
+    func rename(_ taskIndex: IndexPath,_ newTaskName: String) {
+        
+        let fetchRequest = Task.fetchRequest()
+        
+        do {
+            let tasks = try context.fetch(fetchRequest)
+            for task in tasks {
+                if task == taskList[taskIndex.row] {
+                    task.title = newTaskName
+                }
+            }
+        } catch let error {
+            print("Failed to rename task", error)
         }
     
         saveContext()

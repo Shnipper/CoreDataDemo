@@ -6,11 +6,6 @@
 //
 
 import UIKit
-import CoreData
-
-//protocol TaskViewControllerDelegate {
-//    func reloadData()
-//}
 
 class TaskListViewController: UITableViewController {
     
@@ -22,6 +17,18 @@ class TaskListViewController: UITableViewController {
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: cellID)
         setupNavigationBar()
         StorageManager.shared.fetchData()
+    }
+    
+    override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
+        
+        if editingStyle == .delete {
+            StorageManager.shared.delete(indexPath.row)
+        }
+        tableView.deleteRows(at: [indexPath], with: .automatic)
+    }
+    
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        showRenameAlert(with: "Rename Task", message: "Put new name", and: indexPath)
     }
 
     private func setupNavigationBar() {
@@ -52,28 +59,18 @@ class TaskListViewController: UITableViewController {
     }
     
     @objc private func addNewTask() {
-        showAlert(with: "New Task", and: "What do you want to do?")
-    }
-    
-    private func showAlert(with title: String, and message: String) {
-        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        let saveAction = UIAlertAction(title: "Save", style: .default) { _ in
-            guard let task = alert.textFields?.first?.text, !task.isEmpty else { return }
-            self.save(task)
-        }
-        let cancelAction = UIAlertAction(title: "Cancel", style: .destructive)
-        alert.addAction(saveAction)
-        alert.addAction(cancelAction)
-        alert.addTextField { textField in
-            textField.placeholder = "New Task"
-        }
-        present(alert, animated: true)
+        showSaveAlert(with: "New Task", and: "What do you want to do?")
     }
     
     private func save(_ taskName: String) {
         StorageManager.shared.save(taskName)
         let cellIndex = IndexPath(row: StorageManager.shared.taskList.count - 1, section: 0)
         tableView.insertRows(at: [cellIndex], with: .automatic)
+    }
+    
+    private func rename(_ taskIndex: IndexPath,_ newTaskName: String) {
+        StorageManager.shared.rename(taskIndex, newTaskName)
+        tableView.reloadRows(at: [taskIndex], with: .automatic)
     }
 }
 
@@ -91,20 +88,38 @@ extension TaskListViewController {
         cell.contentConfiguration = content
         return cell
     }
-    
-    override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
-        
-        if editingStyle == .delete {
-            StorageManager.shared.delete(taskIndex: indexPath.row)
-        }
-        tableView.deleteRows(at: [indexPath], with: .automatic)
-    }
 }
 
-// MARK: - TaskViewControllerDelegate
-//extension TaskListViewController: TaskViewControllerDelegate {
-//    func reloadData() {
-//        StorageManager.shared.fetchData()
-//        tableView.reloadData()
-//    }
-//}
+// MARK: - AlertControllers
+extension TaskListViewController {
+    
+    private func showSaveAlert(with title: String, and message: String) {
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        let saveAction = UIAlertAction(title: "Save", style: .default) { _ in
+            guard let task = alert.textFields?.first?.text, !task.isEmpty else { return }
+            self.save(task)
+        }
+        let cancelAction = UIAlertAction(title: "Cancel", style: .destructive)
+        alert.addAction(saveAction)
+        alert.addAction(cancelAction)
+        alert.addTextField { textField in
+            textField.placeholder = "New Task"
+        }
+        present(alert, animated: true)
+    }
+    
+    private func showRenameAlert(with title: String, message: String, and taskIndexPath: IndexPath) {
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        let renameAction = UIAlertAction(title: "Rename", style: .default) { _ in
+            guard let task = alert.textFields?.first?.text, !task.isEmpty else { return }
+            self.rename(taskIndexPath, task)
+        }
+        let cancelAction = UIAlertAction(title: "Cancel", style: .destructive)
+        alert.addAction(renameAction)
+        alert.addAction(cancelAction)
+        alert.addTextField { textField in
+            textField.text = StorageManager.shared.taskList[taskIndexPath.row].title
+        }
+        present(alert, animated: true)
+    }
+}
